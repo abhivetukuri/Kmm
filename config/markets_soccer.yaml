@@ -1,0 +1,47 @@
+env: demo
+markets:
+- id: soccer_001_arsenal_will_beat_ch
+  league: EPL
+  match_name: Arsenal will beat Chelsea in Premier League on Dec 24 EPL Match
+  start_time_utc: '2024-12-20T00:00:00Z'
+  scheduled_end_time_utc: '2024-12-24T15:00:00Z'
+  kalshi:
+    env: demo
+    ticker: SOCCEREPL-24DEC-ARS
+    market_id: null
+    yes_side_definition: Arsenal will beat Chelsea in Premier League on Dec 24
+  polymarket:
+    market_slug: arsenal-beats-chelsea-dec-24
+    token_ids:
+      'yes': token123
+      'no': token456
+    outcome_definition: Will Arsenal beat Chelsea in their Premier League match on December 24th?
+  settlement_equivalence:
+    rules_hash: cb2d4c3ecdedd38d97ecf8cc7e7810a69ebe09c0f43cebf98befe0697e9f9110
+    notes: Two-outcome market (YES/NO); Close times differ by 2.0 hours
+  archetype: two_outcome
+  _match_confidence: 0.646
+  _match_reason: 'Common teams: arsenal; Same market type: win'
+- id: soccer_002_barcelona_will_defea
+  league: La Liga
+  match_name: Barcelona will defeat Real Madrid in La Liga match El Clasico
+  start_time_utc: '2024-12-22T00:00:00Z'
+  scheduled_end_time_utc: '2024-12-25T18:00:00Z'
+  kalshi:
+    env: demo
+    ticker: SOCCERLALIGA-25DEC-BAR
+    market_id: null
+    yes_side_definition: Barcelona will defeat Real Madrid in La Liga match
+  polymarket:
+    market_slug: el-clasico-barca-wins
+    token_ids:
+      'yes': token789
+      'no': token012
+    outcome_definition: Will Barcelona defeat Real Madrid in El Clasico?
+  settlement_equivalence:
+    rules_hash: a9f598edc7daa080825e6d5953e9c8d3dc63de398c9e011477692c3e753f6e60
+    notes: Two-outcome market (YES/NO); Close times differ by 2.0 hours
+  archetype: two_outcome
+  _match_confidence: 0.606
+  _match_reason: 'Common teams: barcelona; Same market type: win'
+params_file: params_demo.yaml
