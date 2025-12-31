@@ -24,6 +24,30 @@ class KalshiMarket:
     close_time: datetime | None
     settle_time: datetime | None
     raw_data: dict[str, Any]
+    
+    @property
+    def yes_price(self) -> float:
+        """Get yes price (midpoint of bid/ask)."""
+        if self.yes_ask is not None and self.yes_bid is not None:
+            return (self.yes_ask + self.yes_bid) / 2
+        elif self.yes_ask is not None:
+            return self.yes_ask
+        elif self.yes_bid is not None:
+            return self.yes_bid
+        else:
+            return 0.5  # Default
+    
+    @property 
+    def no_price(self) -> float:
+        """Get no price (midpoint of bid/ask)."""
+        if self.no_ask is not None and self.no_bid is not None:
+            return (self.no_ask + self.no_bid) / 2
+        elif self.no_ask is not None:
+            return self.no_ask
+        elif self.no_bid is not None:
+            return self.no_bid
+        else:
+            return 0.5  # Default
 
 
 @dataclass
@@ -58,6 +82,11 @@ class MatchedMarket:
     
     kalshi_market: KalshiMarket
     polymarket_market: PolymarketMarket
-    match_confidence: float  # 0.0 to 1.0
+    confidence: float  # 0.0 to 1.0 (renamed for consistency)
     match_reason: str
     settlement_notes: str
+    
+    @property
+    def match_confidence(self) -> float:
+        """Backward compatibility."""
+        return self.confidence

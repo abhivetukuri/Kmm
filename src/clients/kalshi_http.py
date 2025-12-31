@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any
@@ -18,7 +19,7 @@ class KalshiHttpClient:
     """HTTP client for Kalshi API."""
     
     DEMO_BASE_URL = "https://demo-api.kalshi.co/trade-api/v2"
-    PROD_BASE_URL = "https://trading-api.kalshi.com/trade-api/v2"
+    PROD_BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"  # Updated URL
     
     def __init__(
         self, 
@@ -106,7 +107,10 @@ class KalshiHttpClient:
             logger.info(f"Retrieved {len(markets)} markets from Kalshi")
             
             # Handle pagination if there's a cursor
-            if "cursor" in data and len(markets) < 5000:  # Safety limit
+            if "cursor" in data and len(markets) < 2000:  # Safety limit (reduced)
+                # Rate limiting to avoid 429 errors
+                await asyncio.sleep(0.5)
+                
                 next_markets = await self.get_markets(
                     category=category,
                     status=status,
@@ -121,45 +125,43 @@ class KalshiHttpClient:
             logger.error(f"Error fetching Kalshi markets: {e}", exc_info=True)
             return markets
     
-    async def get_soccer_markets(self) -> list[KalshiMarket]:
-        """Get all soccer-related markets."""
-        all_markets = []
+    async def get_live_soccer_markets(self) -> list[KalshiMarket]:
+        """Get live soccer markets efficiently from production API."""
+        logger.info("Fetching live soccer markets from Kalshi production...")
         
-        # Try different category filters that might contain soccer
-        categories = ["SPORTS", "FOOTBALL", "SOCCER"]
-        
-        for category in categories:
-            try:
-                markets = await self.get_markets(category=category, status="open")
-                # Filter for soccer/football related markets
+        # Get only SPORTS category with open status (most efficient)
+        try:
+            sports_markets = await self.get_markets(category="SPORTS", status="open", limit=500)
+            
+            # Filter for soccer/football related markets
+            soccer_markets = [
+                market for market in sports_markets
+                if self._is_soccer_market(market)
+            ]
+            
+            logger.info(f"Found {len(soccer_markets)} live soccer markets out of {len(sports_markets)} sports markets")
+            
+            if not soccer_markets:
+                # Try alternative approach - search for soccer-specific patterns
+                logger.info("No soccer markets found in SPORTS category, trying broader search...")
+                
+                # Get markets without category filter but with smaller limit
+                all_markets = await self.get_markets(status="open", limit=200)
                 soccer_markets = [
-                    market for market in markets
+                    market for market in all_markets
                     if self._is_soccer_market(market)
                 ]
-                all_markets.extend(soccer_markets)
-            except Exception as e:
-                logger.debug(f"Error getting {category} markets: {e}")
-        
-        # Also try getting all markets and filtering (backup)
-        if not all_markets:
-            try:
-                all_markets_raw = await self.get_markets(limit=1000)
-                all_markets = [
-                    market for market in all_markets_raw
-                    if self._is_soccer_market(market)
-                ]
-            except Exception as e:
-                logger.error(f"Error getting all markets: {e}")
-        
-        # Remove duplicates by ticker
-        unique_markets = {}
-        for market in all_markets:
-            unique_markets[market.ticker] = market
-        
-        result = list(unique_markets.values())
-        logger.info(f"Found {len(result)} unique soccer markets")
-        
-        return result
+                logger.info(f"Found {len(soccer_markets)} soccer markets in broader search")
+            
+            return soccer_markets
+            
+        except Exception as e:
+            logger.error(f"Error fetching live soccer markets: {e}")
+            return []
+    
+    async def get_soccer_markets(self) -> list[KalshiMarket]:
+        """Get all soccer-related markets (fallback method)."""
+        return await self.get_live_soccer_markets()
     
     def _is_soccer_market(self, market: KalshiMarket) -> bool:
         """Check if a market is soccer/football related."""

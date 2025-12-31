@@ -131,37 +131,77 @@ class PolymarketDiscoveryClient:
             logger.error(f"Error fetching Polymarket markets: {e}", exc_info=True)
             return markets
     
-    async def get_soccer_markets(self) -> list[PolymarketMarket]:
-        """Get all soccer-related markets."""
-        all_markets = []
-        offset = 0
-        limit = 100
+    async def get_live_soccer_markets(self) -> list[PolymarketMarket]:
+        """Get live soccer markets using tag-based filtering."""
+        all_soccer_markets = []
         
-        # Fetch markets in batches
-        while offset < 1000:  # Safety limit
+        # Soccer sport tag IDs from research
+        soccer_tags = [
+            82,      # EPL (Premier League)
+            780,     # La Liga  
+            1494,    # Bundesliga
+            102070,  # Ligue 1
+            101962,  # Serie A
+            100977,  # Champions League
+            1234,    # Champions League (alternate)
+            101680,  # AFC
+            102566,  # OFC
+            102539,  # FIFA
+            101735,  # Eredivisie
+            102561,  # Argentina
+            102008,  # Italian Cup
+            102448,  # Mexico Liga MX
+            102974   # Africa Cup of Nations
+        ]
+        
+        logger.info(f"Fetching live soccer markets using {len(soccer_tags)} tag filters...")
+        
+        # Get markets for each soccer tag
+        for tag_id in soccer_tags:
             try:
-                markets = await self.get_markets(limit=limit, offset=offset, active=True)
-                if not markets:
-                    break
+                response = await self._gamma_client.get("/markets", params={
+                    "tag_id": tag_id,
+                    "closed": "false",  # Only live markets
+                    "limit": 50,
+                    "offset": 0
+                })
                 
-                # Filter for soccer markets
-                soccer_markets = [
-                    market for market in markets
-                    if self._is_soccer_market(market)
-                ]
-                
-                all_markets.extend(soccer_markets)
-                offset += limit
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if isinstance(data, list):
+                        logger.info(f"Tag {tag_id}: Found {len(data)} live markets")
+                        
+                        for market_data in data:
+                            try:
+                                market = self._parse_market(market_data)
+                                if market:
+                                    all_soccer_markets.append(market)
+                            except Exception as e:
+                                logger.debug(f"Error parsing market for tag {tag_id}: {e}")
+                    
+                else:
+                    logger.debug(f"Tag {tag_id} failed: {response.status_code}")
                 
                 # Rate limiting
                 await asyncio.sleep(0.1)
                 
             except Exception as e:
-                logger.error(f"Error fetching markets batch at offset {offset}: {e}")
-                break
+                logger.error(f"Error fetching markets for tag {tag_id}: {e}")
+                continue
         
-        logger.info(f"Found {len(all_markets)} soccer markets")
-        return all_markets
+        # Remove duplicates (same market might have multiple tags)
+        unique_markets = {}
+        for market in all_soccer_markets:
+            unique_markets[market.condition_id] = market
+        
+        final_markets = list(unique_markets.values())
+        logger.info(f"Found {len(final_markets)} unique live soccer markets")
+        return final_markets
+    
+    async def get_soccer_markets(self) -> list[PolymarketMarket]:
+        """Get all soccer-related markets (fallback method)."""
+        return await self.get_live_soccer_markets()
     
     def _is_soccer_market(self, market: PolymarketMarket) -> bool:
         """Check if a market is soccer/football related."""

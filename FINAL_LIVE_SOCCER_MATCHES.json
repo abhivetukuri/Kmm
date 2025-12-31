@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-12-31T13:38:40.314292",
+  "kalshi_soccer_markets": [],
+  "polymarket_soccer_markets": [
+    {
+      "condition_id": null,
+      "question": "Will Arsenal win the 2025\u201326 Champions League?",
+      "outcomes": "[\"Yes\", \"No\"]",
+      "outcome_prices": [],
+      "end_date_iso": null,
+      "market_slug": null
+    }
+  ],
+  "summary": {
+    "kalshi_soccer_markets_found": 0,
+    "polymarket_soccer_markets_found": 1,
+    "potential_matches": 0,
+    "api_calls_made": "1 Kalshi + 4 Polymarket (tag-filtered)",
+    "processing_time": "Under 1 minute",
+    "status": "SUCCESS - No timeouts!"
+  },
+  "matched_markets": []
+}
